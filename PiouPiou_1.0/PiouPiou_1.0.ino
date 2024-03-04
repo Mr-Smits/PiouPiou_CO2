@@ -6,58 +6,65 @@
 #include <AHT20.h>
 #include <ScioSense_ENS160.h>
 
+#define led_pin 13
+
 DS3231 myRTC;
 AHT20 aht20;
 ScioSense_ENS160 ens160(ENS160_I2CADDR_1);
 
-char Date_Time_STR[16]; //eg : "25-12-24 00:00," = 15 caratéres + \0
-char Sensors_Values_STR[15];  //eg : "25.0,55.0,550," = 14 caractères + \0
+char Date_Time_STR[20]; // Increase size to accommodate formatted date/time
+char Sensors_Values_STR[20]; // Increase size to accommodate sensor values
 
 void setup() {
+  pinMode(led_pin, OUTPUT);
+  digitalWrite(led_pin, HIGH); 
   Serial.begin(9600);
+  Serial.println(F("Serial communication Started :"));
   Wire.begin();
 
-  while(SD.begin(10) == false);
-  init_Date_Time();
-  while(aht20.begin() == false);
-  while(ens160.begin() == false);
+  while (!SD.begin(10)) {
+    Serial.println(F("SD card initialization failed!"));
+    delay(1000);
+  }
+  Serial.println(F("Connected to SD_Card !"));
+
+  while (!aht20.begin()) {
+    Serial.println(F("AHT20 initialization failed!"));
+    delay(1000);
+  }
+  Serial.println(F("Connected to AHT20 !"));
+
+  while (!ens160.begin()) {
+    Serial.println(F("ENS160 initialization failed!"));
+    delay(1000);
+  }
   ens160.setMode(ENS160_OPMODE_STD);
+  Serial.println(F("Connected to ENS160 !"));
+  digitalWrite(led_pin, LOW); 
 }
 
 void loop() {
-  get_Date_Time();
-  get_sensors_values();
-  save_to_SD();
-
-  Serial.print(Date_Time_STR);Serial.println(Sensors_Values_STR);
-  delay(300000);
+  if (get_Date_Time() && get_sensors_values()) {
+    save_to_SD();
+    Serial.print(Date_Time_STR); Serial.println(Sensors_Values_STR);
+  }
+  delay(3000);
 }
 
-void init_Date_Time(void){
-  myRTC.setClockMode(false);  // set to 24h
-  
-  myRTC.setDoW(init_DoW);
-  myRTC.setDate(init_date);
-  myRTC.setMonth(init_month);
-  myRTC.setYear(init_year);  
-  myRTC.setHour(init_hour);
-  myRTC.setMinute(init_minute);
-  myRTC.setSecond(init_second);
-}
-
-void get_Date_Time(void){
+bool get_Date_Time() {
   bool h12, PM_time, Century = false;
   sprintf(Date_Time_STR,"%02d-%02d-%02d %02d:%02d,", myRTC.getDate(), myRTC.getMonth(Century), myRTC.getYear(), myRTC.getHour(h12, PM_time), myRTC.getMinute());
+  return true; // Assuming RTC always returns valid data
 }
 
-void get_sensors_values(void){
+bool get_sensors_values() {
   if(aht20.available() && ens160.available()){
     float Temperature;
     float Humidity;
     uint16_t eCO2;
 
-    char Temp_STR[5];
-    char Hum_STR[5];
+    char Temp_STR[6]; // Increase size to accommodate sensor values
+    char Hum_STR[6]; // Increase size to accommodate sensor values
 
     Temperature = aht20.getTemperature();
     Humidity = aht20.getHumidity();
@@ -67,23 +74,24 @@ void get_sensors_values(void){
     ens160.measureRaw(true);
     eCO2 = ens160.geteCO2();
 
-    dtostrf(Temperature, 4, 1, Temp_STR);
-    dtostrf(Humidity, 4, 1, Hum_STR);
+    dtostrf(Temperature, 5, 1, Temp_STR);
+    dtostrf(Humidity, 5, 1, Hum_STR);
     sprintf(Sensors_Values_STR,"%s,%s,%03d",Temp_STR, Hum_STR, eCO2);
+    return true;
   }
+  return false; // Data not available
 }
 
-void save_to_SD(void){
-  if(SD.exists("DATA.TXT"))
-    {
-      File SD_File = SD.open("DATA.TXT", FILE_WRITE);
-      if (SD_File)
-      {
-        SD_File.print(Date_Time_STR);
-        SD_File.println(Sensors_Values_STR);
-        SD_File.close();
-      }
-      else Serial.println(F("Fail opening file !"));
-    }
-    else Serial.println(F("File doesn't exist !"));
+void save_to_SD() {
+  File SD_File = SD.open("DATA.TXT", FILE_WRITE);
+  if (SD_File) {
+    digitalWrite(led_pin, LOW); 
+    SD_File.print(Date_Time_STR);
+    SD_File.println(Sensors_Values_STR);
+    SD_File.close();
+    Serial.println(F("Data written to SD card !"));
+  } else {
+    Serial.println(F("Failed opening file !"));
+    digitalWrite(led_pin, HIGH); 
+  }
 }

@@ -7,6 +7,8 @@
 #include <ScioSense_ENS160.h>
 
 #define led_pin 13
+#define _5SECONDES 5000
+#define _5MINUTES 300000
 
 DS3231 myRTC;
 AHT20 aht20;
@@ -45,10 +47,12 @@ void setup() {
 
 void loop() {
   if (get_Date_Time() && get_sensors_values()) {
-    save_to_SD();
     Serial.print(Date_Time_STR); Serial.println(Sensors_Values_STR);
+    save_to_SD();
   }
-  delay(3000);
+  else digitalWrite(led_pin, HIGH);
+  delay(_5SECONDES);
+  //delay(_5MINUTES);
 }
 
 bool get_Date_Time() {

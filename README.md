@@ -27,15 +27,3 @@ Le Projet doit respecter les contraintes et exigences suivantes :
 •	Facilité d'installation et d'utilisation.
 •	Économie d'énergie et durabilité.
 •	Utilisation des microcontrôleurs déjà présent au Techlab (Arduino, pic).
-
-Budget 
-Budgétisation pour la réalisation potentielle de 5 prototypes :
-Objet	Quantité	Prix
-Capteur CO2	5	20€
-Filament PLA 	2	40€
-Servo moteur	5	20€
-Prototype PCB	5	35€
-Batterie	5	20€
-Chargeur de batterie	5	10€
-Visserie	X	5€
-Total	150€
